@@ -5,7 +5,7 @@ locals {
     vpc_cidr = var.cidr_block
 
     # fix ordering using toset
-    available_azs_cpu = toset(data.aws_ec2_instance_type_offerings.availability_zones_cpu.locations)
+    available_azs_cpu = toset(data.aws_ec2_instance_type_offerings.availability_zones_per_type.locations)
     available_azs     = tolist(local.available_azs_cpu)
 
     az_count = min(length(local.available_azs), 3)
@@ -28,8 +28,9 @@ module "vpc" {
 
     azs             = local.azs
     public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 3, k)]
-    
+    private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 3, k + length(local.azs))]
     public_subnet_names  = [for k, v in local.azs : "${local.instance_name}-subnet-${k}"]
+    private_subnet_names = [for k, v in local.azs : "${local.instance_name}-private-subnet-${k + length(local.azs)}"]
 
     enable_nat_gateway   = true
     single_nat_gateway   = true
@@ -50,6 +51,9 @@ module "vpc" {
     public_subnet_tags = {
         Name = "${local.instance_name}-public-subnet"
     }
+    private_subnet_tags = {
+        Name = "${local.instance_name}-private-subnet"
+    }
 
     tags = local.tags
 }
@@ -57,7 +61,7 @@ module "vpc" {
 #---------------------------------------------------------------
 # Instance Availability
 #---------------------------------------------------------------
-data "aws_ec2_instance_type_offerings" "availability_zones_cpu" {
+data "aws_ec2_instance_type_offerings" "availability_zones_per_type" {
     filter {
         name   = "instance-type"
         values = [local.instance_type]

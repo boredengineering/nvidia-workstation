@@ -1,0 +1,158 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Cloudstation Template",
+    "Parameters": {
+      "InstanceType": {
+        "Type": "String",
+        "Default": "g5.2xlarge",
+        "AllowedValues": [
+          "g5.xlarge",
+          "g5.2xlarge",
+          "g5.4xlarge",
+          "g5.8xlarge",
+          "g5.16xlarge",
+          "g5.12xlarge",
+          "g5.24xlarge",
+          "g5.48xlarge"
+        ]
+      },
+      "ClientIP": {
+        "Type": "String",
+        "Default": "0.0.0.0/0",
+        "MinLength": 9,
+        "MaxLength": 18,
+        "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+      },
+      "DiskSize": {
+        "Type": "Number",
+        "Default": "250",
+        "MinValue": "250",
+        "MaxValue": "16000"
+      }
+    },
+    "Mappings": {
+      "RegionToAMI": {
+        "us-west-2": {
+          "win": "ami-0534fdd8c35a9ccfa"
+        },
+        "us-west-1": {
+          "win": "ami-06a17fb1611800254"
+        },
+        "us-east-1": {
+          "win": "ami-0dcec325865672a69"
+        },
+        "us-east-2": {
+          "win": "ami-0916ae573e02ee0ff"
+        },
+        "ap-south-1": {
+          "win": "ami-08f7ddc473d6f6c3b"
+        },
+        "ap-northeast-1": {
+          "win": "ami-0418236aa5f4a6f94"
+        },
+        "ap-northeast-2": {
+          "win": "ami-0dd00e72698c62e82"
+        },
+        "ap-northeast-3": {
+          "win": "ami-0543d8d7aa1c16b18"
+        },
+        "ap-southeast-1": {
+          "win": "ami-010a94386d8dadd99"
+        },
+        "ap-southeast-2": {
+          "win": "ami-09f9bbf131c60b6c3"
+        },
+        "ap-southeast-3": {
+          "win": "ami-0aed60914cbc7ab1f"
+        },
+        "ap-east-1": {
+          "win": "ami-07f1086336d6adbf8"
+        },
+        "ca-central-1": {
+          "win": "ami-0f512608f260ab9dd"
+        },
+        "eu-north-1": {
+          "win": "ami-08ceb3ad424d8930c"
+        },
+        "eu-central-1": {
+          "win": "ami-039e6328e4f7724ee"
+        },
+        "eu-central-2": {
+          "win": "ami-0e15d01edc3018391"
+        },
+        "eu-west-1": {
+          "win": "ami-09ea6806bd25bf674"
+        },
+        "eu-west-2": {
+          "win": "ami-0983872285bf7a024"
+        },
+        "eu-west-3": {
+          "win": "ami-0b4ee33ddb70fbb3b"
+        },
+        "eu-south-1": {
+          "win": "ami-0664828de4aa709de"
+        },
+        "eu-south-2": {
+          "win": "ami-06c621c54afff3ae8"
+        },
+        "sa-east-1": {
+          "win": "ami-0805bba2bf579a124"
+        },
+        "af-south-1": {
+          "win": "ami-0c27d657969c09177"
+        },
+        "me-south-1": {
+          "win": "ami-025ccef8608bd9d7c"
+        },
+        "me-central-1": {
+          "win": "ami-0be8ac642fb1c6fa6"
+        }
+      }
+    },
+    "Resources": {
+      "Instance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+          "ImageId": {
+            "Fn::FindInMap": ["RegionToAMI", { "Ref": "AWS::Region" }, "win"]
+          },
+          "InstanceType": { "Ref": "InstanceType" },
+          "SecurityGroups": [{ "Ref": "SecurityGroup" }],
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": { "Fn::Join": ["-", [{ "Ref": "AWS::StackName" }, "Instance"]] }
+            }
+          ],
+          "BlockDeviceMappings": [
+            {
+              "DeviceName": "/dev/sda1",
+              "Ebs": {
+                "VolumeSize": { "Ref": "DiskSize" }
+              }
+            }
+          ]
+        }
+      },
+      "SecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Security group to allow traffic from client ip to launched instance",
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "tcp",
+              "CidrIp": { "Ref": "ClientIP" },
+              "FromPort": 8443,
+              "ToPort": 8443
+            }
+          ],
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": { "Fn::Join": ["-", [{ "Ref": "AWS::StackName" }, "SecurityGroup"]] }
+            }
+          ]
+        }
+      }
+    }
+  }
